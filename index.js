@@ -40,7 +40,8 @@ mongoose
 
   const io = new Server(server, {
     cors: {
-      origin: "http://localhost:3001/" || "https://baatein-app-backend.vercel.app/",
+      origin: "https://baatein-app.vercel.app/",
+      // origin: "http://localhost:3001",
       methods: ["GET", "POST"],
     },
   });
@@ -52,10 +53,11 @@ server.listen(port, () => {
 });
 
 io.on("connection", async (socket)=>{
-  console.log(socket);
-  console.log(JSON.stringify(socket.handshake.query));
+  // console.log(socket);
+  // console.log(JSON.stringify(socket.handshake.query));
 
-  const user_id = socket.handshake.query("user_id");
+  const user_id = socket.handshake.query.user_id;
+  // const user_id = socket.handshake.query("user_id");
 
   console.log(`User connected ${socket.id}`)
 
@@ -70,46 +72,142 @@ io.on("connection", async (socket)=>{
     }
   }
 
-  socket.on("friend_request", async (data) => {
-    const to = await User.findById(data.to).select("socket_id");
-    const from = await User.findById(data.from).select("socket_id");
+  // socket.on("friend_request", async (data,callback) => {
+  //   const to = await User.findById(data.to).select("socket_id");
+  //   const from = await User.findById(data.from).select("socket_id");
+  //   console.log("hehehe", to, from)
 
-    await FriendRequest.create({
-      sender: data.from,
-      recipient: data.to,
-    });
+  //   await FriendRequest.create({
+  //     sender: data.from,
+  //     recipient: data.to,
+  //   });
 
-    io.to(to?.socket_id).emit("new_friend_request", {
-      message: "New friend request received",
-    });
-    io.to(from?.socket_id).emit("request_sent", {
-      message: "Request Sent successfully!",
-    });
+  //   io.to(to?.socket_id).emit("new_friend_request", {
+  //     message: "New friend request received",
+  //   });
+  //   io.to(from?.socket_id).emit("request_sent", {
+  //     message: "Request Sent successfully!",
+  //   });
+  //   callback("request sent");
+  // });
+  
+  socket.on("friend_request", async (data, callback) => {
+    try {
+      // Check if the friend request already exists
+      const existingRequest = await FriendRequest.findOne({
+        sender: data.from,
+        recipient: data.to,
+      });
+
+      if (existingRequest) {
+        // If a request already exists, return "already sent"
+        callback("already sent");
+      } else {
+        // If no request exists, create a new friend request
+        await FriendRequest.create({
+          sender: data.from,
+          recipient: data.to,
+        });
+
+        // Emit events to notify sender and recipient
+        io.to(data.to).emit("new_friend_request", {
+          message: "New friend request received",
+        });
+        io.to(data.from).emit("request_sent", {
+          message: "Request Sent successfully!",
+        });
+
+        // Return "sent request"
+        callback("sent request");
+      }
+    } catch (error) {
+      console.error("Error sending friend request:", error);
+      // Handle error
+      callback("error");
+    }
   });
 
-  socket.on("accept_request", async (data) => {
-    console.log(data);
-    const request_doc = await FriendRequest.findById(data.request_id);
-    console.log(request_doc);
 
-    const sender = await User.findById(request_doc.sender);
-    const receiver = await User.findById(request_doc.recipient);
+  // socket.on("accept_request", async (data, callback) => {
+  //   console.log(data);
+  //   const request_doc = await FriendRequest.findById(data.request_id);
+  //   console.log(request_doc);
 
-    sender.friends.push(request_doc.recipient);
-    receiver.friends.push(request_doc.sender);
+  //   const sender = await User.findById(request_doc.sender);
+  //   const receiver = await User.findById(request_doc.recipient);
 
-    await receiver.save({ new: true, validateModifiedOnly: true });
-    await sender.save({ new: true, validateModifiedOnly: true });
+  //   sender.friends.push(request_doc.recipient);
+  //   receiver.friends.push(request_doc.sender);
 
-    await FriendRequest.findByIdAndDelete(data.request_id);
+  //   await receiver.save({ new: true, validateModifiedOnly: true });
+  //   await sender.save({ new: true, validateModifiedOnly: true });
 
-    io.to(sender?.socket_id).emit("request_accepted", {
-      message: "Friend Request Accepted",
-    });
-    io.to(receiver?.socket_id).emit("request_accepted", {
-      message: "Friend Request Accepted",
-    });
+  //   await FriendRequest.findByIdAndDelete(data.request_id);
+
+  //   io.to(sender?.socket_id).emit("request_accepted", {
+  //     message: "Friend Request Accepted",
+  //   });
+  //   io.to(receiver?.socket_id).emit("request_accepted", {
+  //     message: "Friend Request Accepted",
+  //   });
+
+  //   callback("request accepted")
+  // });
+  socket.on("accept_request", async (data, callback) => {
+    try {
+      // Find the friend request by ID
+      const request_doc = await FriendRequest.findById(data.request_id);
+
+      // If request not found, return error
+      if (!request_doc) {
+        return callback("error: request not found");
+      }
+
+      // Find sender and receiver
+      const sender = await User.findById(request_doc.sender);
+      const receiver = await User.findById(request_doc.recipient);
+
+      // Check if sender and receiver exist
+      if (!sender || !receiver) {
+        return callback("error: sender or receiver not found");
+      }
+
+      // Check if the request has already been accepted
+      if (
+        sender.friends.includes(request_doc.recipient) ||
+        receiver.friends.includes(request_doc.sender)
+      ) {
+        return callback("error: request already accepted");
+      }
+
+      // Update sender and receiver's friend lists
+      sender.friends.push(request_doc.recipient);
+      receiver.friends.push(request_doc.sender);
+
+      // Save sender and receiver
+      await receiver.save();
+      await sender.save();
+
+      // Delete the friend request
+      await FriendRequest.findByIdAndDelete(data.request_id);
+
+      // Emit "request_accepted" event to sender and receiver
+      io.to(sender?.socket_id).emit("request_accepted", {
+        message: "Friend Request Accepted",
+      });
+      io.to(receiver?.socket_id).emit("request_accepted", {
+        message: "Friend Request Accepted",
+      });
+
+      // Callback with success message
+      callback("request accepted");
+    } catch (error) {
+      console.error("Error accepting friend request:", error);
+      // Callback with error message
+      callback("error: internal server error");
+    }
   });
+
 
   socket.on("get_direct_conversations", async ({ user_id }, callback) => {
     const existing_conversations = await OneToOneMessage.find({

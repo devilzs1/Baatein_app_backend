@@ -69,17 +69,17 @@ exports.sendOTP = catchAsync(async (req, res, next) => {
 
   await user.save({ new: true, validateModifiedOnly: true });
 
-  console.log(new_otp);
+  // console.log(new_otp);
 
   // send mail
-  // mailService.sendEmail({
-  //   from: "mohammadadil3292@gmail.com",
-  //   to: user.email,
-  //   subject: "Verification OTP",
-  //   html: otp(user.firstName, new_otp),
-  //   text: `Your OTP is ${new_otp}. This is valid for next 10 mins.`,
-  //   attachments: [],
-  // });
+  mailService.sendEmail({
+    from: "mohammadadil3292@gmail.com",
+    to: user.email,
+    subject: "Verification OTP",
+    html: otp(user.firstName, new_otp),
+    text: `Your OTP is ${new_otp}. This is valid for next 10 mins.`,
+    attachments: [],
+  });
 
   res.status(200).json({
     status: "success",
@@ -197,7 +197,7 @@ exports.protect = catchAsync(async (req, res, next) => {
   // 2) Verification of token
   const decoded = await promisify(jwt.verify)(token, process.env.JWT_SECRET);
 
-  console.log(decoded);
+  // console.log(decoded);
 
   // 3) Check if user still exists
 
@@ -237,15 +237,15 @@ exports.forgotPassword = catchAsync(async (req, res, next) => {
   try {
     const resetURL = `http://localhost:3000/auth/new-password?token=${resetToken}`;
     // Send Email with this Reset URL to user's email address
-    console.log(resetURL);
+    // console.log(resetURL);
 
-    // mailService.sendEmail({
-    //   from: "mohammadadil3292@gmail.com",
-    //   to: user.email,
-    //   subject: "Reset Password",
-    //   html: resetPassword(user.firstName, resetURL),
-    //   attachments: [],
-    // });
+    mailService.sendEmail({
+      from: "mohammadadil3292@gmail.com",
+      to: user.email,
+      subject: "Reset Password",
+      html: resetPassword(user.firstName, resetURL),
+      attachments: [],
+    });
 
     res.status(200).json({
       status: "success",
