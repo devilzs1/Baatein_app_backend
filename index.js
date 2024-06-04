@@ -4,7 +4,7 @@ const server = http.createServer(app);
 const mongoose = require("mongoose");
 const jwt = require("jsonwebtoken");
 const dotenv = require("dotenv");
-dotenv.config({ path: "./.env" });
+dotenv.config({ path: "./.env" }); 
 
 const {Server} = require("socket.io");
 const { promisify } = require("util");

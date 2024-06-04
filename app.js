@@ -12,9 +12,9 @@ const app = express();
 
 app.use(
   cors({
-    origin: "*",
+    origin: "https://baatein-app.vercel.app",
     methods: ["GET", "PATCH", "POST", "DELETE", "PUT"],
-    credentials: true, 
+    credentials: true,
   })
 );
 

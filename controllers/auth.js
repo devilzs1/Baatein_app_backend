@@ -235,7 +235,8 @@ exports.forgotPassword = catchAsync(async (req, res, next) => {
 
   // 3) Send it to user's email
   try {
-    const resetURL = `http://localhost:3000/auth/new-password?token=${resetToken}`;
+    const resetURL = `https://baatein-app.vercel.app/auth/new-password?token=${resetToken}`;
+    // const resetURL = `http://localhost:3001/auth/new-password?token=${resetToken}`;
     // Send Email with this Reset URL to user's email address
     // console.log(resetURL);
 
@@ -249,7 +250,7 @@ exports.forgotPassword = catchAsync(async (req, res, next) => {
 
     res.status(200).json({
       status: "success",
-      message: "Token sent to email!",
+      message: "Password Reset link sent to email!",
     });
   } catch (err) {
     user.passwordResetToken = undefined;
@@ -278,7 +279,7 @@ exports.resetPassword = catchAsync(async (req, res, next) => {
   if (!user) {
     return res.status(400).json({
       status: "error",
-      message: "Token is Invalid or Expired",
+      message: "Password Reset link is Invalid or Expired",
     });
   }
   user.password = req.body.password;
