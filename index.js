@@ -40,9 +40,10 @@ mongoose
 
   const io = new Server(server, {
     cors: {
-      origin: "https://baatein-app.vercel.app",
+      origin: "*",
+      // origin: "https://baatein-app.vercel.app",
       // origin: "http://localhost:3001",
-      methods: ["GET", "POST"],
+      methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
     },
   });
 
