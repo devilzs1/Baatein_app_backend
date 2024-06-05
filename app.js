@@ -13,6 +13,7 @@ const app = express();
 app.use(
   cors({
     origin: "*",
+    // origin: "http://localhost:3001",
     // origin: "https://baatein-app.vercel.app",
     methods: ["GET", "PATCH", "POST", "DELETE", "PUT"],
     credentials: true,

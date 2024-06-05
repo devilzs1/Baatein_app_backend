@@ -35,7 +35,6 @@ exports.register = catchAsync(async (req, res, next) => {
   } else if (existing_user) {
     await User.findOneAndUpdate({ email: email }, filteredBody, {
       new: true,
-      validateModifiedOnly: true,
     });
 
     // generate an otp and send to email
@@ -67,7 +66,7 @@ exports.sendOTP = catchAsync(async (req, res, next) => {
 
   user.otp = new_otp.toString();
 
-  await user.save({ new: true, validateModifiedOnly: true });
+  await user.save({ new: true});
 
   // console.log(new_otp);
 
@@ -121,7 +120,7 @@ exports.verifyOTP = catchAsync(async (req, res, next) => {
   // OTP is correct
   user.verified = true;
   user.otp = undefined;
-  await user.save({ new: true, validateModifiedOnly: true });
+  await user.save({ new: true});
 
   const token = signToken(user._id);
   res.status(200).json({

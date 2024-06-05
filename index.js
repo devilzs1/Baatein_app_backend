@@ -60,7 +60,7 @@ io.on("connection", async (socket)=>{
   const user_id = socket.handshake.query.user_id;
   // const user_id = socket.handshake.query("user_id");
 
-  console.log(`User connected ${socket.id}`)
+  // console.log(`User connected ${socket.id}`)
 
   if (user_id != null && Boolean(user_id)) {
     try {
@@ -171,7 +171,7 @@ io.on("connection", async (socket)=>{
       participants: { $all: [user_id] },
     }).populate("participants", "firstName lastName avatar _id email status");
 
-    console.log(existing_conversations);
+    // console.log(existing_conversations);
 
     callback(existing_conversations);
   });
@@ -208,18 +208,23 @@ io.on("connection", async (socket)=>{
 
   socket.on("get_messages", async (data, callback) => {
     try {
-      const { messages } = await OneToOneMessage.findById(
+      const conversation = await OneToOneMessage.findById(
         data.conversation_id
       ).select("messages");
-      callback(messages);
+      if (conversation && conversation.messages) {
+        callback(conversation.messages);
+      } else {
+        callback([]); 
+      }
     } catch (error) {
       console.log(error);
+      callback([]); 
     }
   });
 
   // Handle incoming text/link messages
   socket.on("text_message", async (data) => {
-    console.log("Received message:", data);
+    // console.log("Received message:", data);
 
     const { message, conversation_id, from, to, type } = data;
 
@@ -238,7 +243,7 @@ io.on("connection", async (socket)=>{
     const chat = await OneToOneMessage.findById(conversation_id);
     chat.messages.push(new_message);
 
-    await chat.save({ new: true, validateModifiedOnly: true });
+    await chat.save({ new: true});
 
     // emit incoming_message -> to user
     io.to(to_user?.socket_id).emit("new_message", {
@@ -255,7 +260,7 @@ io.on("connection", async (socket)=>{
 
   // handle Media/Document Message
   socket.on("file_message", (data) => {
-    console.log("Received message:", data);
+    // console.log("Received message:", data);
 
     const fileExtension = path.extname(data.file.name);
 
